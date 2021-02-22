@@ -1,0 +1,10 @@
+Tried to create the s3 website with CloudFormtion. 
+
+Getting error in viewer certificate: CLoudFromtion stack is created and youc an cehck the error there.
+
+But to complete the assignemnt and due to time limits not able to debugg the issue, I have manually created the S3 website with CLoudfront distribution. 
+
+Custom domain name is mapped to the CloudFront domain name in Route53.
+
+https://abhishekpaygonde-coda.assessments.coda.run/
+

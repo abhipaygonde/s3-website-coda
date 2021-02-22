@@ -1,0 +1,89 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    
+    "Parameters": {
+        "RootDomainName": {
+            "Description": "Domain name for your website (yourname-coda.assessments.coda.run)",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "RootBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName" : {"Ref":"RootDomainName"},                
+                "AccessControl": "PublicRead",
+                "WebsiteConfiguration": {
+                    "IndexDocument":"index.html",
+                    "ErrorDocument":"404.html"
+                }
+            }
+        },
+
+        "s3WebsiteCF":{
+          "Type" : "AWS::CloudFront::Distribution",
+          "Properties" : {
+              "DistributionConfig" : {
+                "Aliases": [ {"Ref":"RootDomainName"} ],
+                "Comment" : "S3 Static hosting",
+                "Enabled" : "true",
+                "Origins" : [ {
+                            "DomainName" :{ "Fn::Join" : [ ".", [{"Ref":"RootDomainName"} , "s3-website-us-east-1.amazonaws.com" ] ] },
+                            "Id" : "myS3WebsiteOrigin",
+                            "CustomOriginConfig" : {
+                                "HTTPPort" : "80",
+                                "HTTPSPort" : "443",
+                                "OriginProtocolPolicy" : "http-only"
+                            } 
+                        } 
+                ],
+                "DefaultCacheBehavior" : {
+                        "AllowedMethods" : [ "GET", "HEAD" ],  
+                        "TargetOriginId" : "myS3WebsiteOrigin",
+                        "ForwardedValues" : {
+                            "QueryString" : true,
+                            "Cookies" : { "Forward" : "none" }
+                        },
+                        "ViewerProtocolPolicy" : "redirect-to-https"}
+                    },
+                "ViewerCertificate" : {
+                  "AcmCertificateArn" : "arn:aws:acm:us-east-1:528922625383:certificate/988f4218-d51b-4447-8b23-bd76e80b3aeb",
+                  "CloudFrontDefaultCertificate" : false,
+                  "MinimumProtocolVersion" : "TLSv1.1_2016",
+                  "SslSupportMethod" : "sni-only"
+                },
+            }
+        },
+        
+
+
+
+        "myDNS": {
+            "Type": "AWS::Route53::RecordSetGroup",
+            "Properties": {
+                "HostedZoneId": "Z01774949T4SBFJKF0Z5",
+                "RecordSets": [
+                    {
+                        "Name": {"Ref": "RootDomainName"},
+                        "Type": "A",
+                        "AliasTarget": {
+                            "HostedZoneId": "Z2FDTNDATAQYW2",
+                            "DNSName": {"Fn::GetAtt": ["s3WebsiteCF","DomainName"]}
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "Outputs": {
+        "WebsiteURL": {
+            "Value": {"Fn::GetAtt": ["RootBucket", "WebsiteURL"]},
+            "Description": "URL for website hosted on S3"
+        },
+
+        "CFDomainName": {
+            "Value": {"Fn::GetAtt": ["s3WebsiteCF", "DomainName"]},
+            "Description": "Cloudfront URL for website hosted on S3"
+        }
+    }
+}
